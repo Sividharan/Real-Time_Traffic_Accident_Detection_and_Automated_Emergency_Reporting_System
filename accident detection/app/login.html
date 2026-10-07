@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Emergency Dispatch Portal - Authentication</title>
+  <style>
+    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #0f172a; color: #f8fafc; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+    .card { background: #1e293b; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); width: 420px; }
+    h2 { margin-top: 0; text-align: center; color: #38bdf8; }
+    p.subtitle { text-align: center; color: #94a3b8; font-size: 0.9rem; margin-bottom: 1.5rem; }
+    .field { margin-bottom: 1rem; }
+    label { display: block; font-size: 0.85rem; margin-bottom: 0.4rem; color: #cbd5e1; }
+    input { width: 100%; padding: 0.75rem; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; outline: none; }
+    input:focus { border-color: #38bdf8; }
+    button { width: 100%; padding: 0.75rem; border: none; background: #0284c7; color: white; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s; margin-top: 0.5rem; }
+    button:hover { background: #0369a1; }
+    #message { margin-top: 1rem; padding: 0.75rem; border-radius: 6px; display: none; font-size: 0.85rem; }
+    .error { background: #ef444422; border: 1px solid #ef4444; color: #fca5a5; }
+    .success { background: #22c55e22; border: 1px solid #22c55e; color: #86efac; }
+    #dashboard-view { display: none; }
+    .badge { display: inline-block; padding: 0.25rem 0.6rem; border-radius: 999px; font-size: 0.8rem; font-weight: bold; }
+    .badge-admin { background: #dc2626; color: #fff; }
+    .badge-police { background: #2563eb; color: #fff; }
+    .badge-ems { background: #16a34a; color: #fff; }
+  </style>
+</head>
+<body>
+
+<div class="card" id="login-view">
+  <h2>Dispatch Sentinel</h2>
+  <p class="subtitle">Real-Time Traffic & Emergency Reporting</p>
+  
+  <div class="field">
+    <label>Operator / Responder Email</label>
+    <input type="email" id="email" placeholder="officer@traffic.org" value="officer@traffic.org">
+  </div>
+  <div class="field">
+    <label>Password</label>
+    <input type="password" id="password" placeholder="••••••••" value="SecurePass123!">
+  </div>
+  
+  <button onclick="handleLogin()">Sign In</button>
+  <div id="message"></div>
+</div>
+
+<div class="card" id="dashboard-view">
+  <h2 id="dash-title">Command Center</h2>
+  <p style="text-align:center;"><span id="role-badge" class="badge"></span></p>
+  <div style="background:#0f172a; padding: 1rem; border-radius: 6px; margin: 1rem 0; font-size: 0.85rem;">
+    <p><strong>Session:</strong> Active JWT Verified</p>
+    <p><strong>User:</strong> <span id="dash-user"></span></p>
+    <p><strong>Permissions:</strong> <span id="dash-perms"></span></p>
+  </div>
+  <button style="background:#475569;" onclick="location.reload()">Log Out</button>
+</div>
+
+<script>
+async function handleLogin() {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+  const msgBox = document.getElementById("message");
+
+  msgBox.style.display = "none";
+
+  try {
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      msgBox.className = "error";
+      msgBox.textContent = data.detail || "Authentication failed.";
+      msgBox.style.display = "block";
+      return;
+    }
+
+    // Role-based UI redirection simulation
+    document.getElementById("login-view").style.display = "none";
+    document.getElementById("dashboard-view").style.display = "block";
+    document.getElementById("dash-user").textContent = email;
+
+    const badge = document.getElementById("role-badge");
+    const perms = document.getElementById("dash-perms");
+
+    if (data.role === "Admin") {
+      badge.textContent = "ADMINISTRATOR";
+      badge.className = "badge badge-admin";
+      perms.textContent = "Full System Access, Camera Config, Model Diagnostics";
+    } else if (data.role === "EMS Responder") {
+      badge.textContent = "EMS RESPONDER";
+      badge.className = "badge badge-ems";
+      perms.textContent = "Incident Dispatch Queue, GPS Navigation, Triage Info";
+    } else {
+      badge.textContent = "POLICE / TRAFFIC OPERATOR";
+      badge.className = "badge badge-police";
+      perms.textContent = "Live Stream Surveillance, Crash Flags, Incident Review";
+    }
+
+  } catch (err) {
+    msgBox.className = "error";
+    msgBox.textContent = "Unable to connect to auth server.";
+    msgBox.style.display = "block";
+  }
+}
+</script>
+
+</body>
+</html>
