@@ -63,4 +63,4 @@ def verify_credentials(email: str, password: str) -> Dict:
         "exp": datetime.now(timezone.utc) + timedelta(hours=8),
     }
     token = jwt.encode(token_data, SECRET_KEY, algorithm=ALGORITHM)
-    return {"access_token": token, "token_type": "bearer", "role": user["role"]}
+    return {"access_token": token, "token_type": "bearer", "role": user["role"]}   
