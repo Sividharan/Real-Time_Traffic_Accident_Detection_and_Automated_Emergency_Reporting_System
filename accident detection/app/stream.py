@@ -59,4 +59,5 @@ class RTSPStreamHandler:
 
     def get_frame(self):
         with self.lock:
-            return self.latest_frame.copy() if self.latest_frame is not None else None
+            return self.latest_frame.copy() if self.latest_frame is not None else None         
+
