@@ -1,20 +1,21 @@
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, HTTPException, Response
+from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel
 import os
+from typing import Optional
+import cv2
+import numpy as np
 from auth import verify_credentials
 from stream import RTSPStreamHandler
 from detector import AccidentDetector
-from geocoding import construct_incident_payload
-import cv2
-from fastapi.responses import HTMLResponse, StreamingResponse
-from fastapi.responses import HTMLResponse, StreamingResponse, Response
-from geocoding import reverse_geocode
+from geocoding import construct_incident_payload, reverse_geocode
+from rerouting import CongestionAlertBroadcaster, TrafficCongestionDetector, TrafficRerouter
 
 app = FastAPI(title="Real-Time Accident Detection & Reporting API")
 
 stream = RTSPStreamHandler(camera_id="CAM_NORTH_01", source="synthetic")
 detector = AccidentDetector()
+broadcaster = CongestionAlertBroadcaster()
 
 CAMERAS = {
     "CAM_NORTH_01": {"lat": 11.016844, "lon": 76.955833}
@@ -47,22 +48,86 @@ def system_health():
     }
 
 @app.get("/api/pipeline/run-inference")
-def run_pipeline(simulate_crash: bool = False):
+def run_pipeline(simulate_crash: bool = False, simulate_congestion_count: Optional[int] = None):
     frame = stream.get_frame()
     if frame is None:
-        return {"status": "Waiting for video feed"}
+        if simulate_crash or simulate_congestion_count is not None:
+            frame = np.zeros((480, 640, 3), dtype=np.uint8)
+        else:
+            return {"status": "Waiting for video feed"}
     
     detection = detector.evaluate_frame(frame)
+    if simulate_congestion_count is not None:
+        detection["vehicle_count"] = simulate_congestion_count
+
+    coords = CAMERAS.get(stream.camera_id, {"lat": 11.016844, "lon": 76.955833})
+    congestion_info = broadcaster.generate_congestion_alert(
+        stream.camera_id, detection, coords["lat"], coords["lon"]
+    )
+
     if detection["accident_detected"] or simulate_crash:
-        coords = CAMERAS[stream.camera_id]
         payload = construct_incident_payload(stream.camera_id, coords["lat"], coords["lon"])
         return {
             "alert": True,
             "confidence": 0.89 if simulate_crash else 0.85,
-            "incident": payload
+            "incident": payload,
+            "congestion_alert": congestion_info
         }
     
-    return {"alert": False, "vehicle_count": detection["vehicle_count"]}
+    return {
+        "alert": False,
+        "vehicle_count": detection["vehicle_count"],
+        "congestion_alert": congestion_info
+    }
+
+@app.get("/api/traffic/congestion")
+def get_traffic_congestion(camera_id: str = "CAM_NORTH_01", simulate_vehicle_count: Optional[int] = None):
+    """
+    SCRUM-31: Evaluates traffic congestion for a camera location and broadcasts status & rerouting.
+    """
+    if camera_id not in CAMERAS:
+        coords = {"lat": None, "lon": None}
+    else:
+        coords = CAMERAS[camera_id]
+
+    frame = stream.get_frame()
+    if frame is None:
+        frame = np.zeros((480, 640, 3), dtype=np.uint8)
+    
+    detection = detector.evaluate_frame(frame)
+
+    if simulate_vehicle_count is not None:
+        detection["vehicle_count"] = simulate_vehicle_count
+
+    return broadcaster.generate_congestion_alert(
+        camera_id=camera_id,
+        detection_result=detection,
+        lat=coords["lat"],
+        lon=coords["lon"]
+    )
+
+@app.get("/api/traffic/reroute")
+def get_traffic_reroute(
+    origin_lat: Optional[float] = None,
+    origin_lon: Optional[float] = None,
+    dest_lat: Optional[float] = None,
+    dest_lon: Optional[float] = None,
+    camera_id: Optional[str] = "CAM_NORTH_01"
+):
+    """
+    SCRUM-31: Calculates dynamic alternative routes given coordinates or camera ID origin.
+    """
+    if (origin_lat is None or origin_lon is None) and camera_id in CAMERAS:
+        coords = CAMERAS[camera_id]
+        origin_lat = coords["lat"]
+        origin_lon = coords["lon"]
+
+    return broadcaster.rerouter.get_alternative_route(
+        origin_lat=origin_lat,
+        origin_lon=origin_lon,
+        dest_lat=dest_lat,
+        dest_lon=dest_lon
+    )
 
 def generate_mjpeg_stream():
     """Generates continuous multipart JPEG frames from the ingested stream."""
@@ -98,7 +163,7 @@ def visual_detection(simulate_crash: bool = True):
     """
     frame = stream.get_frame()
     if frame is None:
-        return {"status": "Waiting for video feed"}
+        frame = np.zeros((480, 640, 3), dtype=np.uint8)
     
     annotated = frame.copy()
     
