@@ -43,3 +43,8 @@ htmlcov/
 
 # Logs
 *.log
+
+# Databases & Uploads
+*.db
+*.sqlite3
+uploads/

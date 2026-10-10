@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Citizen Incident Reporting - Dispatch Sentinel</title>
+  <style>
+    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; }
+    body { background-color: #0f172a; color: #f8fafc; min-height: 100vh; padding: 1.5rem 1rem; display: flex; flex-direction: column; align-items: center; }
+    .nav-bar { width: 100%; max-width: 640px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+    .brand { font-size: 1.1rem; font-weight: bold; color: #38bdf8; text-decoration: none; }
+    .nav-link { color: #94a3b8; text-decoration: none; font-size: 0.85rem; padding: 0.4rem 0.8rem; border: 1px solid #334155; border-radius: 6px; transition: all 0.2s; }
+    .nav-link:hover { color: #38bdf8; border-color: #38bdf8; background: #1e293b; }
+    .card { background: #1e293b; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); width: 100%; max-width: 640px; }
+    h1 { font-size: 1.5rem; color: #38bdf8; margin-bottom: 0.3rem; text-align: center; }
+    p.subtitle { text-align: center; color: #94a3b8; font-size: 0.88rem; margin-bottom: 1.5rem; }
+    .field { margin-bottom: 1.25rem; }
+    label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem; color: #cbd5e1; }
+    label span.required { color: #f87171; }
+    input[type="text"], input[type="number"], input[type="datetime-local"], select, textarea {
+      width: 100%; padding: 0.75rem; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; outline: none; font-size: 0.9rem; transition: border-color 0.2s;
+    }
+    input:focus, select:focus, textarea:focus { border-color: #38bdf8; }
+    textarea { min-height: 90px; resize: vertical; }
+    .char-counter { font-size: 0.75rem; color: #64748b; text-align: right; margin-top: 0.25rem; }
+    .upload-zone {
+      border: 2px dashed #334155; border-radius: 8px; padding: 1.5rem; text-align: center; background: #0f172a; cursor: pointer; transition: all 0.2s; position: relative;
+    }
+    .upload-zone:hover { border-color: #38bdf8; background: #13213c; }
+    .upload-zone input[type="file"] { display: none; }
+    .preview-container { margin-top: 0.75rem; display: none; text-align: center; position: relative; }
+    .preview-image { max-width: 100%; max-height: 240px; border-radius: 6px; border: 1px solid #334155; object-fit: contain; }
+    .remove-btn { display: inline-block; margin-top: 0.5rem; padding: 0.35rem 0.8rem; background: #ef4444; color: white; border: none; border-radius: 4px; font-size: 0.8rem; cursor: pointer; }
+    .remove-btn:hover { background: #dc2626; }
+    .location-box { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 1rem; }
+    .loc-actions { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
+    .btn-secondary {
+      padding: 0.55rem 0.9rem; background: #334155; color: #f8fafc; border: none; border-radius: 6px; font-size: 0.82rem; cursor: pointer; font-weight: 600; transition: background 0.2s;
+    }
+    .btn-secondary:hover { background: #475569; }
+    .loc-status { font-size: 0.82rem; color: #94a3b8; margin-bottom: 0.5rem; }
+    .coords-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    .submit-btn {
+      width: 100%; padding: 0.85rem; border: none; background: #0284c7; color: white; border-radius: 6px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: background 0.2s; margin-top: 0.75rem;
+    }
+    .submit-btn:hover:not(:disabled) { background: #0369a1; }
+    .submit-btn:disabled { background: #475569; cursor: not-allowed; opacity: 0.7; }
+    .alert { padding: 0.8rem 1rem; border-radius: 6px; font-size: 0.85rem; margin-top: 1rem; display: none; }
+    .alert-error { background: #ef444422; border: 1px solid #ef4444; color: #fca5a5; }
+    .alert-success { background: #22c55e22; border: 1px solid #22c55e; color: #86efac; }
+    .privacy-notice {
+      margin-top: 1.5rem; padding: 0.9rem; background: #0f172a; border-left: 3px solid #38bdf8; border-radius: 4px; font-size: 0.78rem; color: #94a3b8; line-height: 1.4;
+    }
+    .success-card {
+      display: none; text-align: center; padding: 2rem 1rem;
+    }
+    .badge {
+      display: inline-block; padding: 0.3rem 0.75rem; border-radius: 999px; font-size: 0.82rem; font-weight: bold; margin-top: 0.5rem;
+    }
+    .badge-pending { background: #d97706; color: #fff; }
+    .info-table { width: 100%; margin: 1.5rem 0; text-align: left; font-size: 0.85rem; border-collapse: collapse; }
+    .info-table td { padding: 0.5rem; border-bottom: 1px solid #334155; }
+    .info-table td:first-child { color: #94a3b8; width: 40%; }
+  </style>
+</head>
+<body>
+
+  <div class="nav-bar">
+    <a href="/report" class="brand">Dispatch Sentinel</a>
+    <a href="/login" class="nav-link">Operator Portal &rarr;</a>
+  </div>
+
+  <div class="card" id="form-card">
+    <h1>Manual Incident Reporting</h1>
+    <p class="subtitle">Submit a traffic accident report for operator verification</p>
+
+    <div id="error-alert" class="alert alert-error"></div>
+
+    <form id="incident-form" onsubmit="handleFormSubmit(event)">
+      
+      <!-- Incident Photo Upload -->
+      <div class="field">
+        <label>Accident Photo <span class="required">*</span> <span style="font-size:0.75rem; color:#94a3b8;">(JPG, PNG, WEBP &bull; Max 5MB)</span></label>
+        <div class="upload-zone" id="upload-zone" onclick="document.getElementById('photo-input').click()">
+          <p id="upload-prompt" style="color: #cbd5e1; font-size: 0.9rem;">
+            📷 Click or Drag &amp; Drop to upload incident photo
+          </p>
+          <input type="file" id="photo-input" accept="image/jpeg,image/png,image/webp" onchange="handleFileSelect(event)" />
+        </div>
+        <div class="preview-container" id="preview-container">
+          <img id="preview-img" class="preview-image" alt="Accident Preview" />
+          <div>
+            <button type="button" class="remove-btn" onclick="removePhoto()">Remove Photo</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- GPS Geolocation Capture -->
+      <div class="field">
+        <label>Incident Location</label>
+        <div class="location-box">
+          <div class="loc-actions">
+            <button type="button" class="btn-secondary" id="btn-detect-gps" onclick="detectGPSLocation()">
+              📍 Detect My Location
+            </button>
+            <button type="button" class="btn-secondary" id="btn-retry-gps" style="display:none;" onclick="detectGPSLocation()">
+              🔄 Retry GPS Detection
+            </button>
+          </div>
+          <div id="loc-status" class="loc-status">Click "Detect My Location" or provide coordinates manually.</div>
+          <div class="coords-grid">
+            <div>
+              <label style="font-size:0.78rem;">Latitude (-90 to 90)</label>
+              <input type="number" step="any" id="lat-input" placeholder="e.g. 11.016844" min="-90" max="90" oninput="handleManualCoordChange()" />
+            </div>
+            <div>
+              <label style="font-size:0.78rem;">Longitude (-180 to 180)</label>
+              <input type="number" step="any" id="lon-input" placeholder="e.g. 76.955833" min="-180" max="180" oninput="handleManualCoordChange()" />
+            </div>
+          </div>
+          <input type="hidden" id="loc-source" value="manual" />
+        </div>
+      </div>
+
+      <!-- Quick Incident Description -->
+      <div class="field">
+        <label>Incident Description <span class="required">*</span></label>
+        <textarea id="desc-input" maxlength="1000" placeholder="Provide details: vehicles involved, estimated damages, blocked lanes, or injuries..." oninput="updateCharCount()"></textarea>
+        <div class="char-counter"><span id="char-count">0</span> / 1000 characters</div>
+      </div>
+
+      <!-- Optional Incident Details -->
+      <div class="field" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+        <div>
+          <label>Incident Category</label>
+          <select id="cat-input">
+            <option value="Vehicle Collision" selected>Vehicle Collision</option>
+            <option value="Vehicle Rollover">Vehicle Rollover</option>
+            <option value="Pedestrian Involved">Pedestrian Involved</option>
+            <option value="Vehicle Fire">Vehicle Fire</option>
+            <option value="Road Hazard">Road Hazard</option>
+            <option value="Other">Other Incident</option>
+          </select>
+        </div>
+        <div>
+          <label>Estimated Incident Time</label>
+          <input type="datetime-local" id="time-input" />
+        </div>
+      </div>
+
+      <!-- Submission Button -->
+      <button type="submit" class="submit-btn" id="submit-btn">Submit Accident Report</button>
+    </form>
+
+    <!-- Privacy Notice -->
+    <div class="privacy-notice">
+      🔒 <strong>Privacy Notice:</strong> Your report, photo evidence, and location coordinates are securely transmitted to authorized traffic operators to investigate and dispatch emergency responders. Citizen submissions are confidential and never published publicly.
+    </div>
+  </div>
+
+  <!-- Success Confirmation View -->
+  <div class="card success-card" id="success-card">
+    <div style="font-size: 3rem; margin-bottom: 0.5rem;">✅</div>
+    <h2>Report Submitted Successfully</h2>
+    <p style="color: #94a3b8; font-size: 0.9rem; margin-top: 0.25rem;">
+      Your report has been queued for operator verification.
+    </p>
+
+    <div style="text-align:center;">
+      <span class="badge badge-pending">PENDING VERIFICATION</span>
+    </div>
+
+    <table class="info-table">
+      <tr>
+        <td>Incident ID:</td>
+        <td style="font-family:monospace; color:#38bdf8; font-weight:bold;" id="res-incident-id">-</td>
+      </tr>
+      <tr>
+        <td>Submitted At:</td>
+        <td id="res-timestamp">-</td>
+      </tr>
+      <tr>
+        <td>Status:</td>
+        <td>Pending Operator Review</td>
+      </tr>
+    </table>
+
+    <p style="font-size: 0.85rem; color: #cbd5e1; margin-bottom: 1.5rem;">
+      An on-duty operator will review your report and initiate emergency dispatch if verified.
+    </p>
+
+    <button type="button" class="btn-secondary" style="width: 100%; padding: 0.75rem;" onclick="resetForm()">
+      Submit Another Incident Report
+    </button>
+  </div>
+
+  <script>
+    // Set default incident time to current local time
+    function initDefaultTime() {
+      const now = new Date();
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+      document.getElementById("time-input").value = now.toISOString().slice(0, 16);
+    }
+    initDefaultTime();
+
+    let selectedFile = null;
+
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+      if (!allowedTypes.includes(file.type)) {
+        showError("Invalid file type. Only JPG, PNG, and WEBP formats are accepted.");
+        return;
+      }
+
+      const maxSize = 5 * 1024 * 1024; // 5 MB
+      if (file.size > maxSize) {
+        showError("File size exceeds 5MB limit. Please upload a smaller photo.");
+        return;
+      }
+
+      selectedFile = file;
+      hideError();
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        document.getElementById("preview-img").src = e.target.result;
+        document.getElementById("preview-container").style.display = "block";
+        document.getElementById("upload-prompt").textContent = `Selected: ${file.name} (${(file.size / 1024).toFixed(0)} KB)`;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function removePhoto() {
+      selectedFile = null;
+      document.getElementById("photo-input").value = "";
+      document.getElementById("preview-img").src = "";
+      document.getElementById("preview-container").style.display = "none";
+      document.getElementById("upload-prompt").textContent = "📷 Click or Drag & Drop to upload incident photo";
+    }
+
+    function detectGPSLocation() {
+      const statusEl = document.getElementById("loc-status");
+      const retryBtn = document.getElementById("btn-retry-gps");
+      const detectBtn = document.getElementById("btn-detect-gps");
+
+      if (!navigator.geolocation) {
+        statusEl.innerHTML = "<span style='color:#f87171;'>Geolocation is not supported by your browser. Please enter coordinates manually.</span>";
+        return;
+      }
+
+      statusEl.innerHTML = "⏳ Requesting GPS location permission...";
+      detectBtn.disabled = true;
+
+      navigator.geolocation.getCurrentPosition(
+        function(position) {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          document.getElementById("lat-input").value = lat.toFixed(6);
+          document.getElementById("lon-input").value = lon.toFixed(6);
+          document.getElementById("loc-source").value = "gps";
+          statusEl.innerHTML = `<span style='color:#86efac;'>✓ GPS coordinates captured (${lat.toFixed(6)}, ${lon.toFixed(6)})</span>`;
+          retryBtn.style.display = "none";
+          detectBtn.disabled = false;
+        },
+        function(error) {
+          detectBtn.disabled = false;
+          retryBtn.style.display = "inline-block";
+          let errMsg = "Location detection failed.";
+          if (error.code === error.PERMISSION_DENIED) {
+            errMsg = "GPS permission denied. Please enable location permissions or enter coordinates manually.";
+          } else if (error.code === error.POSITION_UNAVAILABLE) {
+            errMsg = "Location information is unavailable. You may enter coordinates manually.";
+          } else if (error.code === error.TIMEOUT) {
+            errMsg = "Location request timed out. Please retry or enter coordinates manually.";
+          }
+          statusEl.innerHTML = `<span style='color:#f87171;'>${errMsg}</span>`;
+        },
+        { timeout: 10000, enableHighAccuracy: true }
+      );
+    }
+
+    function handleManualCoordChange() {
+      document.getElementById("loc-source").value = "manual";
+      const lat = document.getElementById("lat-input").value;
+      const lon = document.getElementById("lon-input").value;
+      if (lat && lon) {
+        document.getElementById("loc-status").innerHTML = `<span style='color:#cbd5e1;'>Manual coordinates: ${lat}, ${lon}</span>`;
+      }
+    }
+
+    function updateCharCount() {
+      const text = document.getElementById("desc-input").value;
+      document.getElementById("char-count").textContent = text.length;
+    }
+
+    function showError(msg) {
+      const el = document.getElementById("error-alert");
+      el.textContent = msg;
+      el.style.display = "block";
+    }
+
+    function hideError() {
+      const el = document.getElementById("error-alert");
+      el.style.display = "none";
+    }
+
+    async function handleFormSubmit(event) {
+      event.preventDefault();
+      hideError();
+
+      const desc = document.getElementById("desc-input").value.trim();
+      if (!desc || desc.length < 5) {
+        showError("Please provide a meaningful incident description (at least 5 characters).");
+        return;
+      }
+
+      if (!selectedFile) {
+        showError("Please upload a photo of the incident.");
+        return;
+      }
+
+      const latVal = document.getElementById("lat-input").value.trim();
+      const lonVal = document.getElementById("lon-input").value.trim();
+
+      if (latVal || lonVal) {
+        const latNum = parseFloat(latVal);
+        const lonNum = parseFloat(lonVal);
+        if (isNaN(latNum) || latNum < -90 || latNum > 90) {
+          showError("Invalid latitude. Must be a number between -90 and 90.");
+          return;
+        }
+        if (isNaN(lonNum) || lonNum < -180 || lonNum > 180) {
+          showError("Invalid longitude. Must be a number between -180 and 180.");
+          return;
+        }
+      }
+
+      const submitBtn = document.getElementById("submit-btn");
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Submitting Accident Report...";
+
+      const formData = new FormData();
+      formData.append("photo", selectedFile);
+      formData.append("description", desc);
+      if (latVal) formData.append("latitude", latVal);
+      if (lonVal) formData.append("longitude", lonVal);
+      formData.append("location_source", document.getElementById("loc-source").value);
+      formData.append("incident_category", document.getElementById("cat-input").value);
+      
+      const timeVal = document.getElementById("time-input").value;
+      if (timeVal) {
+        formData.append("incident_time", new Date(timeVal).toISOString());
+      }
+
+      try {
+        const response = await fetch("/api/incidents", {
+          method: "POST",
+          body: formData
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          showError(result.detail || result.message || "Failed to submit report.");
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Submit Accident Report";
+          return;
+        }
+
+        // Show confirmation view
+        document.getElementById("form-card").style.display = "none";
+        document.getElementById("success-card").style.display = "block";
+        document.getElementById("res-incident-id").textContent = result.incident_id;
+        document.getElementById("res-timestamp").textContent = new Date(result.submitted_at || Date.now()).toLocaleString();
+
+      } catch (err) {
+        showError("Network connection error. Please verify your connection and try again.");
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Submit Accident Report";
+      }
+    }
+
+    function resetForm() {
+      document.getElementById("incident-form").reset();
+      removePhoto();
+      document.getElementById("loc-status").innerHTML = "Click 'Detect My Location' or provide coordinates manually.";
+      document.getElementById("btn-retry-gps").style.display = "none";
+      document.getElementById("loc-source").value = "manual";
+      document.getElementById("char-count").textContent = "0";
+      document.getElementById("submit-btn").disabled = false;
+      document.getElementById("submit-btn").textContent = "Submit Accident Report";
+      initDefaultTime();
+      document.getElementById("success-card").style.display = "none";
+      document.getElementById("form-card").style.display = "block";
+    }
+  </script>
+</body>
+</html>

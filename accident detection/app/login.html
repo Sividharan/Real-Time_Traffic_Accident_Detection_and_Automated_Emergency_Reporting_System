@@ -2,11 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Emergency Dispatch Portal - Authentication</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Emergency Dispatch Portal - Authentication &amp; Command Center</title>
   <style>
     * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    body { background-color: #0f172a; color: #f8fafc; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-    .card { background: #1e293b; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); width: 420px; }
+    body { background-color: #0f172a; color: #f8fafc; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 1rem; }
+    .nav-bar { width: 100%; max-width: 900px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+    .brand { font-size: 1.1rem; font-weight: bold; color: #38bdf8; text-decoration: none; }
+    .nav-link { color: #94a3b8; text-decoration: none; font-size: 0.85rem; padding: 0.4rem 0.8rem; border: 1px solid #334155; border-radius: 6px; transition: all 0.2s; }
+    .nav-link:hover { color: #38bdf8; border-color: #38bdf8; background: #1e293b; }
+    .card { background: #1e293b; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); width: 100%; max-width: 440px; transition: max-width 0.3s; }
+    .card-wide { max-width: 960px; }
     h2 { margin-top: 0; text-align: center; color: #38bdf8; }
     p.subtitle { text-align: center; color: #94a3b8; font-size: 0.9rem; margin-bottom: 1.5rem; }
     .field { margin-bottom: 1rem; }
@@ -23,91 +29,383 @@
     .badge-admin { background: #dc2626; color: #fff; }
     .badge-police { background: #2563eb; color: #fff; }
     .badge-ems { background: #16a34a; color: #fff; }
+    .badge-pending { background: #d97706; color: #fff; }
+
+    /* Pending Verification Queue Styles */
+    .section-title { font-size: 1.2rem; color: #38bdf8; margin: 1.5rem 0 0.75rem 0; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 0.5rem; }
+    .refresh-btn { width: auto; padding: 0.35rem 0.8rem; font-size: 0.8rem; margin: 0; background: #334155; }
+    .refresh-btn:hover { background: #475569; }
+    .incident-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1rem; }
+    @media (min-width: 768px) {
+      .incident-grid { grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); }
+    }
+    .incident-card {
+      background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between; transition: border-color 0.2s;
+    }
+    .incident-card:hover { border-color: #38bdf8; }
+    .inc-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem; }
+    .inc-id { font-family: monospace; font-weight: bold; color: #38bdf8; font-size: 0.95rem; }
+    .inc-date { font-size: 0.78rem; color: #94a3b8; }
+    .inc-desc { background: #1e293b; padding: 0.65rem; border-radius: 6px; font-size: 0.85rem; color: #e2e8f0; margin-bottom: 0.75rem; white-space: pre-wrap; word-break: break-word; }
+    .inc-details { font-size: 0.82rem; color: #94a3b8; margin-bottom: 0.75rem; line-height: 1.5; }
+    .inc-photo-box { margin-bottom: 0.75rem; text-align: center; }
+    .inc-thumb { max-height: 180px; width: 100%; object-fit: cover; border-radius: 6px; border: 1px solid #334155; cursor: pointer; }
+    .inc-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.5rem; }
+    .btn-verify { background: #16a34a; padding: 0.6rem; font-size: 0.85rem; }
+    .btn-verify:hover { background: #15803d; }
+    .btn-reject { background: #dc2626; padding: 0.6rem; font-size: 0.85rem; }
+    .btn-reject:hover { background: #b91c1c; }
+    .empty-state { text-align: center; padding: 2.5rem 1rem; color: #94a3b8; font-size: 0.95rem; background: #0f172a; border-radius: 8px; border: 1px dashed #334155; margin-top: 1rem; }
+    .map-link { color: #38bdf8; text-decoration: none; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 0.25rem; }
+    .map-link:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
 
-<div class="card" id="login-view">
-  <h2>Dispatch Sentinel</h2>
-  <p class="subtitle">Real-Time Traffic & Emergency Reporting</p>
-  
-  <div class="field">
-    <label>Operator / Responder Email</label>
-    <input type="email" id="email" placeholder="officer@traffic.org" value="officer@traffic.org">
+  <div class="nav-bar">
+    <a href="/login" class="brand">Dispatch Sentinel</a>
+    <a href="/report" class="nav-link">Citizen Incident Reporting &rarr;</a>
   </div>
-  <div class="field">
-    <label>Password</label>
-    <input type="password" id="password" placeholder="••••••••" value="SecurePass123!">
+
+  <!-- Login View -->
+  <div class="card" id="login-view">
+    <h2>Dispatch Sentinel</h2>
+    <p class="subtitle">Real-Time Traffic &amp; Emergency Reporting</p>
+    
+    <div class="field">
+      <label>Operator / Responder Email</label>
+      <input type="email" id="email" placeholder="officer@traffic.org" value="officer@traffic.org">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="password" placeholder="••••••••" value="SecurePass123!">
+    </div>
+    
+    <button onclick="handleLogin()">Sign In</button>
+    <div id="message"></div>
   </div>
-  
-  <button onclick="handleLogin()">Sign In</button>
-  <div id="message"></div>
-</div>
 
-<div class="card" id="dashboard-view">
-  <h2 id="dash-title">Command Center</h2>
-  <p style="text-align:center;"><span id="role-badge" class="badge"></span></p>
-  <div style="background:#0f172a; padding: 1rem; border-radius: 6px; margin: 1rem 0; font-size: 0.85rem;">
-    <p><strong>Session:</strong> Active JWT Verified</p>
-    <p><strong>User:</strong> <span id="dash-user"></span></p>
-    <p><strong>Permissions:</strong> <span id="dash-perms"></span></p>
+  <!-- Dashboard / Command Center View -->
+  <div class="card" id="dashboard-view">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.5rem;">
+      <h2 id="dash-title" style="margin:0;">Command Center</h2>
+      <button style="width:auto; padding:0.4rem 0.9rem; background:#475569; margin:0;" onclick="handleLogout()">Log Out</button>
+    </div>
+    <p style="text-align:center; margin: 0.25rem 0 1rem 0;"><span id="role-badge" class="badge"></span></p>
+    
+    <div style="background:#0f172a; padding: 0.85rem; border-radius: 6px; margin-bottom: 1.5rem; font-size: 0.82rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.5rem;">
+      <div><strong>Session:</strong> Active JWT Authenticated</div>
+      <div><strong>Operator:</strong> <span id="dash-user"></span></div>
+      <div><strong>Permissions:</strong> <span id="dash-perms"></span></div>
+    </div>
+
+    <div id="operator-alert" class="alert" style="display:none; margin-bottom: 1rem;"></div>
+
+    <!-- SCRUM-35: Pending Verification Queue -->
+    <div class="section-title">
+      <span>Pending Verification (<span id="pending-count">0</span>)</span>
+      <button class="refresh-btn" onclick="fetchPendingIncidents()">🔄 Refresh Queue</button>
+    </div>
+
+    <div id="queue-loading" style="text-align:center; padding: 1.5rem; color: #94a3b8; display:none;">
+      ⏳ Loading pending incident reports...
+    </div>
+
+    <div id="queue-empty" class="empty-state" style="display:none;">
+      No incidents are awaiting verification.
+    </div>
+
+    <div class="incident-grid" id="incidents-container"></div>
   </div>
-  <button style="background:#475569;" onclick="location.reload()">Log Out</button>
-</div>
 
-<script>
-async function handleLogin() {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-  const msgBox = document.getElementById("message");
+  <script>
+    let authToken = null;
+    let currentUserRole = null;
 
-  msgBox.style.display = "none";
+    function escapeHtml(text) {
+      if (!text) return "";
+      return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
 
-  try {
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password })
+    function showOperatorAlert(msg, isSuccess = true) {
+      const el = document.getElementById("operator-alert");
+      el.className = isSuccess ? "success" : "error";
+      el.style.display = "block";
+      el.textContent = msg;
+      setTimeout(() => { el.style.display = "none"; }, 6000);
+    }
+
+    async function handleLogin() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      const msgBox = document.getElementById("message");
+
+      msgBox.style.display = "none";
+
+      try {
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          msgBox.className = "error";
+          msgBox.textContent = data.detail || "Authentication failed.";
+          msgBox.style.display = "block";
+          return;
+        }
+
+        authToken = data.access_token;
+        currentUserRole = data.role;
+        sessionStorage.setItem("access_token", authToken);
+        sessionStorage.setItem("user_email", email);
+        sessionStorage.setItem("user_role", data.role);
+
+        displayDashboard(email, data.role);
+
+      } catch (err) {
+        msgBox.className = "error";
+        msgBox.textContent = "Unable to connect to auth server.";
+        msgBox.style.display = "block";
+      }
+    }
+
+    function displayDashboard(email, role) {
+      document.getElementById("login-view").style.display = "none";
+      const dashView = document.getElementById("dashboard-view");
+      dashView.style.display = "block";
+      dashView.classList.add("card-wide");
+      document.getElementById("dash-user").textContent = email;
+
+      const badge = document.getElementById("role-badge");
+      const perms = document.getElementById("dash-perms");
+
+      if (role === "Admin") {
+        badge.textContent = "ADMINISTRATOR";
+        badge.className = "badge badge-admin";
+        perms.textContent = "Full System Access, Verification & Diagnostics";
+      } else if (role === "EMS Responder") {
+        badge.textContent = "EMS RESPONDER";
+        badge.className = "badge badge-ems";
+        perms.textContent = "Incident Verification Queue, Triage & Dispatch";
+      } else {
+        badge.textContent = "TRAFFIC OPERATOR";
+        badge.className = "badge badge-police";
+        perms.textContent = "Surveillance, Incident Verification & Rerouting";
+      }
+
+      fetchPendingIncidents();
+    }
+
+    function handleLogout() {
+      sessionStorage.clear();
+      authToken = null;
+      location.reload();
+    }
+
+    async function fetchPendingIncidents() {
+      if (!authToken) return;
+
+      const loadingEl = document.getElementById("queue-loading");
+      const emptyEl = document.getElementById("queue-empty");
+      const container = document.getElementById("incidents-container");
+
+      loadingEl.style.display = "block";
+      emptyEl.style.display = "none";
+      container.innerHTML = "";
+
+      try {
+        const res = await fetch("/api/incidents/pending", {
+          headers: { "Authorization": `Bearer ${authToken}` }
+        });
+
+        loadingEl.style.display = "none";
+
+        if (!res.ok) {
+          if (res.status === 401 || res.status === 403) {
+            showOperatorAlert("Session expired or unauthorized. Please re-authenticate.", false);
+            handleLogout();
+            return;
+          }
+          const errData = await res.json();
+          showOperatorAlert(errData.detail || "Failed to fetch pending queue.", false);
+          return;
+        }
+
+        const incidents = await res.json();
+        document.getElementById("pending-count").textContent = incidents.length;
+
+        if (incidents.length === 0) {
+          emptyEl.style.display = "block";
+          return;
+        }
+
+        incidents.forEach(inc => {
+          container.appendChild(createIncidentCard(inc));
+        });
+
+      } catch (err) {
+        loadingEl.style.display = "none";
+        showOperatorAlert("Connection error retrieving incident queue.", false);
+      }
+    }
+
+    function createIncidentCard(inc) {
+      const card = document.createElement("div");
+      card.className = "incident-card";
+      card.id = `card-${inc.incident_id}`;
+
+      const dateStr = inc.submitted_at ? new Date(inc.submitted_at).toLocaleString() : "Recently";
+      const category = escapeHtml(inc.incident_category || "Vehicle Collision");
+      const desc = escapeHtml(inc.description);
+      
+      let locationHtml = "";
+      if (inc.latitude !== null && inc.latitude !== undefined && inc.longitude !== null && inc.longitude !== undefined) {
+        const mapUrl = `https://www.openstreetmap.org/?mlat=${inc.latitude}&mlon=${inc.longitude}#map=16/${inc.latitude}/${inc.longitude}`;
+        locationHtml = `
+          <div>📍 <strong>Location:</strong> ${inc.latitude.toFixed(6)}, ${inc.longitude.toFixed(6)} 
+            <a href="${mapUrl}" target="_blank" rel="noopener noreferrer" class="map-link">
+              (Open in Map &nearr;)
+            </a>
+          </div>
+          <div>🏷️ <strong>Source:</strong> ${escapeHtml(inc.location_source || 'manual')}</div>
+        `;
+      } else {
+        locationHtml = `<div>📍 <strong>Location:</strong> Coordinates not provided</div>`;
+      }
+
+      const photoUrl = `/api/incidents/${inc.incident_id}/photo?token=${encodeURIComponent(authToken)}`;
+
+      card.innerHTML = `
+        <div>
+          <div class="inc-header">
+            <div>
+              <div class="inc-id">${escapeHtml(inc.incident_id)}</div>
+              <div class="inc-date">Submitted: ${dateStr}</div>
+            </div>
+            <span class="badge badge-pending">PENDING</span>
+          </div>
+
+          <div class="inc-desc">
+            <div style="font-size:0.75rem; color:#94a3b8; margin-bottom: 0.2rem;">CATEGORY: ${category}</div>
+            "${desc}"
+          </div>
+
+          <div class="inc-photo-box">
+            <img src="${photoUrl}" class="inc-thumb" alt="Accident Photo" onclick="window.open('${photoUrl}', '_blank')" title="Click to view full photo" />
+          </div>
+
+          <div class="inc-details">
+            ${locationHtml}
+            <div>🛡️ <strong>Verification Status:</strong> PENDING_VERIFICATION</div>
+          </div>
+        </div>
+
+        <div class="inc-actions">
+          <button class="btn-verify" onclick="verifyIncident('${inc.incident_id}')">
+            ✓ Verify Incident
+          </button>
+          <button class="btn-reject" onclick="rejectIncident('${inc.incident_id}')">
+            ✕ Reject Report
+          </button>
+        </div>
+      `;
+
+      return card;
+    }
+
+    async function verifyIncident(incidentId) {
+      if (!confirm(`Are you sure you want to VERIFY incident ${incidentId}? This will confirm the accident and initiate emergency dispatch.`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/incidents/${incidentId}/verify`, {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${authToken}` }
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          showOperatorAlert(data.detail || data.message || "Verification failed.", false);
+          return;
+        }
+
+        const dispatchInfo = data.dispatch ? ` Dispatch Status: ${data.dispatch.dispatch_status}` : "";
+        showOperatorAlert(`Incident ${incidentId} verified successfully.${dispatchInfo}`, true);
+        
+        // Remove card from UI dynamically
+        removeCardFromQueue(incidentId);
+
+      } catch (err) {
+        showOperatorAlert("Failed to complete verification. Check connection.", false);
+      }
+    }
+
+    async function rejectIncident(incidentId) {
+      const reason = prompt(`Enter rejection reason for incident ${incidentId}:`, "False alarm / no collision detected");
+      if (reason === null) return; // Cancelled
+
+      try {
+        const res = await fetch(`/api/incidents/${incidentId}/reject`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ rejection_reason: reason })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          showOperatorAlert(data.detail || data.message || "Rejection failed.", false);
+          return;
+        }
+
+        showOperatorAlert(`Incident ${incidentId} rejected as false alarm.`, true);
+        removeCardFromQueue(incidentId);
+
+      } catch (err) {
+        showOperatorAlert("Failed to complete rejection. Check connection.", false);
+      }
+    }
+
+    function removeCardFromQueue(incidentId) {
+      const card = document.getElementById(`card-${incidentId}`);
+      if (card) {
+        card.remove();
+      }
+      const container = document.getElementById("incidents-container");
+      const countEl = document.getElementById("pending-count");
+      const remaining = container.children.length;
+      countEl.textContent = remaining;
+
+      if (remaining === 0) {
+        document.getElementById("queue-empty").style.display = "block";
+      }
+    }
+
+    // Check existing session
+    window.addEventListener("DOMContentLoaded", () => {
+      const savedToken = sessionStorage.getItem("access_token");
+      const savedEmail = sessionStorage.getItem("user_email");
+      const savedRole = sessionStorage.getItem("user_role");
+      if (savedToken && savedEmail) {
+        authToken = savedToken;
+        currentUserRole = savedRole;
+        displayDashboard(savedEmail, savedRole);
+      }
     });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      msgBox.className = "error";
-      msgBox.textContent = data.detail || "Authentication failed.";
-      msgBox.style.display = "block";
-      return;
-    }
-
-    // Role-based UI redirection simulation
-    document.getElementById("login-view").style.display = "none";
-    document.getElementById("dashboard-view").style.display = "block";
-    document.getElementById("dash-user").textContent = email;
-
-    const badge = document.getElementById("role-badge");
-    const perms = document.getElementById("dash-perms");
-
-    if (data.role === "Admin") {
-      badge.textContent = "ADMINISTRATOR";
-      badge.className = "badge badge-admin";
-      perms.textContent = "Full System Access, Camera Config, Model Diagnostics";
-    } else if (data.role === "EMS Responder") {
-      badge.textContent = "EMS RESPONDER";
-      badge.className = "badge badge-ems";
-      perms.textContent = "Incident Dispatch Queue, GPS Navigation, Triage Info";
-    } else {
-      badge.textContent = "POLICE / TRAFFIC OPERATOR";
-      badge.className = "badge badge-police";
-      perms.textContent = "Live Stream Surveillance, Crash Flags, Incident Review";
-    }
-
-  } catch (err) {
-    msgBox.className = "error";
-    msgBox.textContent = "Unable to connect to auth server.";
-    msgBox.style.display = "block";
-  }
-}
-</script>
-
+  </script>
 </body>
 </html>
