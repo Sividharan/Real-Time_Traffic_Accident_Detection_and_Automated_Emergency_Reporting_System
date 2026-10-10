@@ -14,6 +14,12 @@ A comprehensive FastAPI-based solution for real-time traffic monitoring, vehicle
   - **Congestion Detection**: Configurable vehicle density thresholding (`CONGESTION_VEHICLE_THRESHOLD`) to evaluate traffic density without false alarms.
   - **Dynamic Alternative Routing**: Integration engine supporting external routing APIs (e.g., OSRM) with fallback route advisory when unconfigured or unreachable.
   - **Congestion Alert Broadcast**: Broadcasts congestion status, affected location address, vehicle count, and alternative routing details.
+- **Manual Citizen Incident Reporting & Verification (SCRUM-35)**:
+  - **Citizen Incident Reporting**: Lightweight, mobile-responsive web form (`/report`) for bystanders to submit manual accident reports with photos, GPS coordinates, descriptions, and categories.
+  - **Secure Photo Uploads**: Strict magic-byte header inspection, PIL content verification, random server-side filename generation, and size limiting.
+  - **Pending Verification Queue**: Integrated into Command Center (`/operator`) showing pending submissions with photo previews, OpenStreetMap coordinates, and empty state.
+  - **One-Click Operator Verification & Rejection**: Atomic SQLite transactions preventing race conditions, recording reviewer metadata and timestamps, and triggering emergency dispatch integration.
+  - **Emergency Dispatch Integration**: Extensible integration interface (`EmergencyDispatchService`) reporting real dispatch statuses with idempotency protection.
 
 ---
 
@@ -105,10 +111,19 @@ pytest "accident detection/tests" -v
 | `/api/traffic/reroute` | GET | **[SCRUM-31]** Calculates dynamic alternative routes or fallback route |
 | `/api/stream/live` | GET | MJPEG live video stream feed |
 | `/api/geo/reverse-lookup` | GET | Resolves camera coordinates to street address and landmark |
+| `/report` | GET | **[SCRUM-35]** Citizen manual accident reporting web form |
+| `/operator` | GET | **[SCRUM-35]** Operator Command Center & Pending Verification queue |
+| `/api/incidents` | POST | **[SCRUM-35]** Submits manual citizen accident report with photo & coordinates |
+| `/api/incidents/pending` | GET | **[SCRUM-35]** Retrieves pending verification incident queue for operators |
+| `/api/incidents/{id}` | GET | **[SCRUM-35]** Retrieves full details for a specific incident |
+| `/api/incidents/{id}/verify` | POST | **[SCRUM-35]** One-click verification and emergency dispatch trigger |
+| `/api/incidents/{id}/reject` | POST | **[SCRUM-35]** One-click rejection of false alarm reports with reason |
+| `/api/incidents/{id}/photo` | GET | **[SCRUM-35]** Secure incident photo evidence retrieval |
 
 ---
 
 ## Known Limitations
 
 - **Routing API Fallback**: When `ROUTING_API_URL` is not set, the system uses static advisory routes and does not fabricate fake travel time savings.
+- **Dispatch API Integration**: When `EMERGENCY_DISPATCH_API_URL` is not set, the system registers verification and accurately notes `DISPATCH_NOT_CONFIGURED` without fabricating fake dispatch contacts.
 - **Synthetic Feed**: Default camera feed uses a synthetic OpenCV matrix for testing when hardware RTSP cameras are offline.
