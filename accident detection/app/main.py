@@ -21,6 +21,7 @@ from database import (
 )
 from photo_storage import save_uploaded_photo, get_photo_path
 from dispatch import EmergencyDispatchService
+from archival import archive_incident_evidence, ARCHIVE_DIR
 
 app = FastAPI(title="Real-Time Accident Detection & Reporting API")
 
