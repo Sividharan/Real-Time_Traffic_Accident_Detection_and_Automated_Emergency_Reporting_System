@@ -337,6 +337,10 @@ async def submit_citizen_incident(
         "submitted_at": submitted_at
     }
 
+# ============================================================================
+# SCRUM-33: Accident Video Snapshot & Evidence Archival
+# ============================================================================
+
 @app.get("/api/incidents/pending", response_model=List[Dict[str, Any]])
 def get_pending_incidents_queue(operator: Dict = Depends(get_current_operator)):
     """
@@ -482,3 +486,38 @@ def get_incident_photo_endpoint(
         media_type=media_type,
         headers={"Cache-Control": "private, no-cache"}
     )
+
+@app.post("/api/archive/record-incident")
+def trigger_accident_archival(camera_id: str = "CAM_NORTH_01"):
+    frame = stream.get_frame()
+    if frame is None:
+        raise HTTPException(status_code=503, detail="Camera feed unavailable.")
+
+    annotated = frame.copy()
+    cv2.rectangle(annotated, (120, 150), (280, 320), (0, 255, 0), 2)
+    cv2.rectangle(annotated, (230, 160), (390, 330), (0, 255, 0), 2)
+    cv2.rectangle(annotated, (220, 150), (290, 320), (0, 0, 255), 3)
+    cv2.putText(annotated, "ACCIDENT EVIDENCE ARCHIVE", (30, 420),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+
+    coords = CAMERAS.get(camera_id, {"lat": 11.016844, "lon": 76.955833})
+    payload = construct_incident_payload(camera_id, coords["lat"], coords["lon"])
+
+    return archive_incident_evidence(payload["event_id"], camera_id, annotated, payload)
+
+@app.get("/api/archive/{incident_id}/snapshot")
+def get_archived_snapshot(incident_id: str):
+    folder = os.path.join(ARCHIVE_DIR, incident_id)
+    if not os.path.exists(folder):
+        raise HTTPException(status_code=404, detail="Incident evidence not found.")
+    for f in os.listdir(folder):
+        if f.endswith(".jpg"):
+            return FileResponse(os.path.join(folder, f), media_type="image/jpeg")
+    raise HTTPException(status_code=404, detail="Snapshot not found.")
+
+@app.get("/api/archive/{incident_id}/manifest")
+def get_archived_manifest(incident_id: str):
+    manifest_path = os.path.join(ARCHIVE_DIR, incident_id, f"{incident_id}_manifest.json")
+    if not os.path.exists(manifest_path):
+        raise HTTPException(status_code=404, detail="Manifest not found.")
+    return FileResponse(manifest_path, media_type="application/json")
