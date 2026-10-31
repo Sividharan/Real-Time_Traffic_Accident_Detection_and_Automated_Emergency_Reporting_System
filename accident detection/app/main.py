@@ -336,11 +336,7 @@ async def submit_citizen_incident(
         "message": "Incident report submitted successfully and is pending operator verification.",
         "submitted_at": submitted_at
     }
-
-# ============================================================================
-# SCRUM-33: Accident Video Snapshot & Evidence Archival
-# ============================================================================
-
+    
 @app.get("/api/incidents/pending", response_model=List[Dict[str, Any]])
 def get_pending_incidents_queue(operator: Dict = Depends(get_current_operator)):
     """
@@ -486,6 +482,10 @@ def get_incident_photo_endpoint(
         media_type=media_type,
         headers={"Cache-Control": "private, no-cache"}
     )
+
+# ============================================================================
+# SCRUM-33: Accident Video Snapshot & Evidence Archival
+# ============================================================================
 
 @app.post("/api/archive/record-incident")
 def trigger_accident_archival(camera_id: str = "CAM_NORTH_01"):
