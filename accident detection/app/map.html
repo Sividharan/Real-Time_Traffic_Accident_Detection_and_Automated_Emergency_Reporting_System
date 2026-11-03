@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Emergency Operations - Live Incident Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { display: flex; flex-direction: column; height: 100vh; background: #0f172a; color: #f8fafc; }
+    header { background: #1e293b; padding: 0.85rem 1.5rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #334155; }
+    h1 { font-size: 1.25rem; color: #38bdf8; display: flex; align-items: center; gap: 0.5rem; }
+    .status-pill { font-size: 0.8rem; background: #22c55e22; border: 1px solid #22c55e; color: #86efac; padding: 0.25rem 0.6rem; border-radius: 999px; }
+    #container { display: flex; flex: 1; overflow: hidden; }
+    #sidebar { width: 340px; background: #1e293b; border-right: 1px solid #334155; padding: 1rem; overflow-y: auto; }
+    #map { flex: 1; height: 100%; background: #0b1120; }
+    
+    .card { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 0.85rem; margin-bottom: 0.75rem; cursor: pointer; transition: border-color 0.2s; }
+    .card:hover { border-color: #38bdf8; }
+    .badge { font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: bold; text-transform: uppercase; }
+    .badge-critical { background: #ef4444; color: #fff; }
+    .badge-moderate { background: #f59e0b; color: #000; }
+    .leaflet-popup-content-wrapper { background: #1e293b; color: #f8fafc; border-radius: 8px; }
+    .leaflet-popup-tip { background: #1e293b; }
+    .popup-title { font-weight: bold; color: #38bdf8; margin-bottom: 0.3rem; }
+    .popup-btn { display: inline-block; margin-top: 0.5rem; padding: 0.35rem 0.75rem; background: #0284c7; color: white; text-decoration: none; border-radius: 4px; font-size: 0.8rem; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1><span>🚨</span> First Responder Incident Map</h1>
+  <div><span class="status-pill">● System Online & Dispatch Synced</span></div>
+</header>
+
+<div id="container">
+  <div id="sidebar">
+    <h3 style="margin-bottom: 0.75rem; font-size: 0.95rem; color: #94a3b8;">ACTIVE CRASH QUEUE</h3>
+    <div id="incident-list">Loading active incidents...</div>
+  </div>
+  <div id="map"></div>
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  // Initialize map centered on Coimbatore
+  const map = L.map('map').setView([11.016844, 76.955833], 13);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  const markers = {};
+
+  async function loadIncidents() {
+    try {
+      const res = await fetch('/api/geo/active-incidents');
+      const data = await res.json();
+      
+      const listContainer = document.getElementById('incident-list');
+      listContainer.innerHTML = '';
+
+      data.incidents.forEach(inc => {
+        // Add Marker to Map
+        const marker = L.circleMarker([inc.latitude, inc.longitude], {
+          radius: 10,
+          fillColor: inc.severity === 'Critical' ? '#ef4444' : '#f59e0b',
+          color: '#ffffff',
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 0.85
+        }).addTo(map);
+
+        marker.bindPopup(`
+          <div class="popup-title">${inc.event_id}</div>
+          <div><strong>Location:</strong> ${inc.address}</div>
+          <div><strong>Camera:</strong> ${inc.camera_id}</div>
+          <div><strong>Severity:</strong> <span style="color:${inc.severity === 'Critical' ? '#f87171' : '#fcd34d'}">${inc.severity}</span></div>
+          <a class="popup-btn" href="${inc.evidence_url}" target="_blank">View Visual Evidence</a>
+        `);
+
+        markers[inc.event_id] = marker;
+
+        // Add to sidebar
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.3rem;">
+            <strong>${inc.event_id}</strong>
+            <span class="badge ${inc.severity === 'Critical' ? 'badge-critical' : 'badge-moderate'}">${inc.severity}</span>
+          </div>
+          <div style="font-size:0.85rem; color:#cbd5e1;">${inc.address}</div>
+          <div style="font-size:0.75rem; color:#64748b; margin-top:0.3rem;">Camera: ${inc.camera_id}</div>
+        `;
+        card.onclick = () => {
+          map.setView([inc.latitude, inc.longitude], 16);
+          marker.openPopup();
+        };
+        listContainer.appendChild(card);
+      });
+    } catch (err) {
+      console.error(err);
+      document.getElementById('incident-list').innerHTML = '<p style="color:#ef4444;">Failed to load incidents.</p>';
+    }
+  }
+
+  loadIncidents();
+</script>
+
+</body>
+</html>
