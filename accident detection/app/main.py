@@ -22,6 +22,7 @@ from database import (
 from photo_storage import save_uploaded_photo, get_photo_path
 from dispatch import EmergencyDispatchService
 from archival import archive_incident_evidence, ARCHIVE_DIR
+from severity_engine import compute_severity
 
 app = FastAPI(title="Real-Time Accident Detection & Reporting API")
 
@@ -521,3 +522,34 @@ def get_archived_manifest(incident_id: str):
     if not os.path.exists(manifest_path):
         raise HTTPException(status_code=404, detail="Manifest not found.")
     return FileResponse(manifest_path, media_type="application/json")
+
+# ============================================================================
+# SCRUM-26: Accident Severity & Vehicle Classification Engine
+# ============================================================================
+
+@app.get("/api/pipeline/severity-classification")
+def evaluate_severity(
+    vehicle_a: str = "car",
+    vehicle_b: str = "truck",
+    overlap_iou: float = 0.35
+):
+    """
+    Evaluates incident severity based on classified vehicle types and collision overlap.
+    """
+    detected_vehicles = [
+        {"class": vehicle_a, "confidence": 0.92, "box": [120, 150, 280, 320]},
+        {"class": vehicle_b, "confidence": 0.88, "box": [230, 160, 390, 330]}
+    ]
+
+    analysis = compute_severity(
+        detected_vehicles=detected_vehicles,
+        overlap_ratio=overlap_iou
+    )
+
+    return {
+        "camera_id": stream.camera_id,
+        "status": "INCIDENT_CLASSIFIED",
+        "involved_vehicles": [v["class"] for v in detected_vehicles],
+        "overlap_iou": overlap_iou,
+        "severity_analysis": analysis
+    }
