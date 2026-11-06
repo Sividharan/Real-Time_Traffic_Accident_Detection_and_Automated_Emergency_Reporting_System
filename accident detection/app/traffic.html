@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Traffic Operator Surveillance &amp; Verification Center</title>
+  <style>
+    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; }
+    body { background-color: #0f172a; color: #f8fafc; min-height: 100vh; display: flex; flex-direction: column; }
+    
+    header {
+      background: #1e293b; padding: 0.85rem 1.5rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #334155;
+    }
+    .brand { font-size: 1.2rem; font-weight: bold; color: #38bdf8; text-decoration: none; display: flex; align-items: center; gap: 0.5rem; }
+    .nav-links { display: flex; align-items: center; gap: 0.75rem; }
+    .nav-btn {
+      color: #94a3b8; text-decoration: none; font-size: 0.85rem; padding: 0.4rem 0.8rem; border: 1px solid #334155; border-radius: 6px; transition: all 0.2s; background: #0f172a;
+    }
+    .nav-btn:hover, .nav-btn.active { color: #38bdf8; border-color: #38bdf8; background: #1e293b; }
+    .btn-logout { background: #dc2626; color: white; border: none; cursor: pointer; }
+    .btn-logout:hover { background: #b91c1c; }
+
+    .container { max-width: 1400px; width: 100%; margin: 0 auto; padding: 1.5rem; display: flex; flex-direction: column; gap: 1.5rem; }
+
+    .grid-top { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; }
+    @media (max-width: 992px) { .grid-top { grid-template-columns: 1fr; } }
+
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 1.25rem; }
+    .card-title { font-size: 1.05rem; color: #38bdf8; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 0.5rem; }
+
+    /* Video feed */
+    .stream-box { position: relative; width: 100%; background: #000; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; min-height: 400px; }
+    .stream-box img { width: 100%; max-height: 520px; object-fit: contain; }
+    .stream-overlay { position: absolute; top: 12px; left: 12px; background: rgba(15, 23, 42, 0.85); padding: 0.4rem 0.75rem; border-radius: 6px; font-size: 0.82rem; border: 1px solid #334155; }
+
+    /* Camera selector */
+    .cam-select-bar { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    .cam-btn { background: #0f172a; color: #cbd5e1; border: 1px solid #334155; padding: 0.45rem 0.85rem; border-radius: 6px; cursor: pointer; font-size: 0.82rem; }
+    .cam-btn.active { background: #0284c7; color: white; border-color: #0284c7; font-weight: bold; }
+
+    /* Telemetry widgets */
+    .telemetry-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem; }
+    .telem-card { background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 0.85rem; text-align: center; }
+    .telem-val { font-size: 1.4rem; font-weight: bold; color: #38bdf8; }
+    .telem-lbl { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; margin-top: 0.2rem; }
+
+    /* Verification queue */
+    .incident-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 1rem; margin-top: 1rem; }
+    .incident-card { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 1rem; display: flex; flex-direction: column; justify-content: space-between; }
+    .inc-desc { background: #1e293b; padding: 0.65rem; border-radius: 6px; font-size: 0.85rem; color: #e2e8f0; margin: 0.5rem 0; }
+    .inc-thumb { max-height: 160px; width: 100%; object-fit: cover; border-radius: 6px; margin: 0.5rem 0; cursor: pointer; border: 1px solid #334155; }
+    .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.75rem; }
+    .btn-verify { background: #16a34a; color: white; border: none; padding: 0.55rem; border-radius: 6px; font-weight: bold; cursor: pointer; }
+    .btn-reject { background: #dc2626; color: white; border: none; padding: 0.55rem; border-radius: 6px; font-weight: bold; cursor: pointer; }
+
+    .badge { display: inline-block; padding: 0.25rem 0.6rem; border-radius: 999px; font-size: 0.75rem; font-weight: bold; }
+    .badge-online { background: #16a34a; color: #fff; }
+    .badge-offline { background: #dc2626; color: #fff; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <a href="/traffic" class="brand">
+      <span>🚦</span> Dispatch Sentinel &bull; Traffic Monitoring &amp; Surveillance
+    </a>
+    <div class="nav-links">
+      <span style="font-size:0.85rem; color:#94a3b8;">Operator: <strong id="user-display" style="color:#38bdf8;">Officer</strong></span>
+      <a href="/admin" class="nav-btn">Admin Analytics</a>
+      <a href="/ems" class="nav-btn">EMS Operations</a>
+      <a href="/map" class="nav-btn" target="_blank">Incident Map &nearr;</a>
+      <button class="nav-btn btn-logout" onclick="handleLogout()">Sign Out</button>
+    </div>
+  </header>
+
+  <div class="container">
+    
+    <div class="grid-top">
+      <!-- Live Video Feed Section -->
+      <div class="card">
+        <div class="card-title">
+          <span>Live CCTV Surveillance Feed</span>
+          <span id="cam-status-pill" class="badge badge-online">ONLINE</span>
+        </div>
+
+        <div class="cam-select-bar" id="cam-selector-container">
+          <!-- Dynamically populated camera buttons -->
+        </div>
+
+        <div class="stream-box">
+          <img id="live-stream-img" src="/api/stream/live" alt="CCTV Stream Feed" />
+          <div class="stream-overlay" id="stream-telemetry">
+            Camera: <strong id="active-cam-title">CAM_NORTH_01</strong> &bull; YOLO AI Active
+          </div>
+        </div>
+
+        <div class="telemetry-row">
+          <div class="telem-card">
+            <div class="telem-val" id="telem-vehicles">--</div>
+            <div class="telem-lbl">Vehicles In View</div>
+          </div>
+          <div class="telem-card">
+            <div class="telem-val" id="telem-congestion" style="color:#22c55e;">NORMAL</div>
+            <div class="telem-lbl">Congestion Status</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detection Controls & Actions -->
+      <div class="card">
+        <div class="card-title">Real-Time Collision Assessment</div>
+        
+        <p style="font-size:0.85rem; color:#94a3b8; margin-bottom:1rem;">
+          YOLOv8 evaluates spatial IoU overlaps across motor vehicles. Click below to run instantaneous inference or test crash alert generation.
+        </p>
+
+        <button onclick="runInference(false)" style="width:100%; padding:0.75rem; background:#0284c7; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer; margin-bottom:0.75rem;">
+          🔍 Run Instant Inference
+        </button>
+
+        <button onclick="runInference(true)" style="width:100%; padding:0.75rem; background:#d97706; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer; margin-bottom:1.5rem;">
+          ⚠️ Simulate Crash Incident
+        </button>
+
+        <div style="background:#0f172a; padding:1rem; border-radius:8px; border:1px solid #334155; font-size:0.82rem;">
+          <div style="font-weight:bold; color:#38bdf8; margin-bottom:0.4rem;">Detection Telemetry:</div>
+          <pre id="detection-output" style="white-space:pre-wrap; color:#cbd5e1; font-family:monospace;">Waiting for evaluation...</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Incident Verification Queue -->
+    <div class="card">
+      <div class="card-title">
+        <span>Citizen Incident Verification Queue (<span id="queue-count">0</span>)</span>
+        <button onclick="loadPendingQueue()" style="background:#334155; color:#f8fafc; border:none; padding:0.35rem 0.85rem; border-radius:6px; font-size:0.8rem; cursor:pointer;">
+          🔄 Refresh Queue
+        </button>
+      </div>
+
+      <div id="queue-empty" style="display:none; text-align:center; padding:2rem; color:#94a3b8;">
+        ✅ No incidents pending verification.
+      </div>
+
+      <div class="incident-grid" id="queue-container"></div>
+    </div>
+
+  </div>
+
+  <script>
+    let token = sessionStorage.getItem("access_token");
+    let activeCam = "CAM_NORTH_01";
+
+    window.addEventListener("DOMContentLoaded", () => {
+      if (!token) {
+        window.location.href = "/login";
+        return;
+      }
+      const email = sessionStorage.getItem("user_email") || "Officer";
+      document.getElementById("user-display").textContent = email;
+
+      loadCameras();
+      loadPendingQueue();
+      setInterval(pollTelemetry, 4000);
+    });
+
+    function handleLogout() {
+      sessionStorage.clear();
+      window.location.href = "/login";
+    }
+
+    async function authFetch(url, options = {}) {
+      const headers = options.headers || {};
+      headers["Authorization"] = `Bearer ${token}`;
+      return fetch(url, { ...options, headers });
+    }
+
+    async function loadCameras() {
+      try {
+        const res = await fetch("/api/cameras");
+        if (res.ok) {
+          const cams = await res.json();
+          const container = document.getElementById("cam-selector-container");
+          container.innerHTML = cams.map(c => `
+            <button class="cam-btn ${c.camera_id === activeCam ? 'active' : ''}" onclick="selectCamera('${c.camera_id}', '${c.name}')">
+              📹 ${c.name} (${c.camera_id})
+            </button>
+          `).join("");
+        }
+      } catch (e) { console.error(e); }
+    }
+
+    function selectCamera(camId, name) {
+      activeCam = camId;
+      document.getElementById("active-cam-title").textContent = `${name} [${camId}]`;
+      document.getElementById("live-stream-img").src = `/api/cameras/${camId}/stream?t=${Date.now()}`;
+      loadCameras();
+      pollTelemetry();
+    }
+
+    async function pollTelemetry() {
+      try {
+        const res = await fetch(`/api/pipeline/run-inference?camera_id=${activeCam}`);
+        if (res.ok) {
+          const data = await res.json();
+          document.getElementById("telem-vehicles").textContent = data.vehicle_count !== undefined ? data.vehicle_count : "--";
+          const cong = data.congestion_alert ? data.congestion_alert.congestion_status : "NORMAL";
+          const el = document.getElementById("telem-congestion");
+          el.textContent = cong;
+          el.style.color = cong === "NORMAL" ? "#22c55e" : "#ef4444";
+        }
+      } catch (e) {}
+    }
+
+    async function runInference(simulateCrash) {
+      try {
+        const res = await fetch(`/api/pipeline/run-inference?camera_id=${activeCam}&simulate_crash=${simulateCrash}`);
+        const data = await res.json();
+        document.getElementById("detection-output").textContent = JSON.stringify(data, null, 2);
+      } catch (e) {
+        document.getElementById("detection-output").textContent = "Inference request failed.";
+      }
+    }
+
+    async function loadPendingQueue() {
+      try {
+        const res = await authFetch("/api/incidents/pending");
+        if (res.ok) {
+          const incidents = await res.json();
+          document.getElementById("queue-count").textContent = incidents.length;
+          const container = document.getElementById("queue-container");
+          const empty = document.getElementById("queue-empty");
+
+          if (incidents.length === 0) {
+            empty.style.display = "block";
+            container.innerHTML = "";
+            return;
+          }
+          empty.style.display = "none";
+
+          container.innerHTML = incidents.map(inc => {
+            const photoUrl = `/api/incidents/${inc.incident_id}/photo?token=${encodeURIComponent(token)}`;
+            return `
+              <div class="incident-card" id="card-${inc.incident_id}">
+                <div>
+                  <div style="display:flex; justify-content:space-between;">
+                    <strong style="color:#38bdf8; font-family:monospace;">${inc.incident_id}</strong>
+                    <span style="font-size:0.75rem; color:#94a3b8;">${new Date(inc.submitted_at).toLocaleTimeString()}</span>
+                  </div>
+                  <div class="inc-desc">"${inc.description}"</div>
+                  <img src="${photoUrl}" class="inc-thumb" onclick="window.open('${photoUrl}', '_blank')" alt="Accident photo"/>
+                  <div style="font-size:0.78rem; color:#94a3b8;">
+                    📍 ${inc.latitude ? `${inc.latitude.toFixed(5)}, ${inc.longitude.toFixed(5)}` : "No GPS"}
+                  </div>
+                </div>
+                <div class="btn-group">
+                  <button class="btn-verify" onclick="verifyIncident('${inc.incident_id}')">✓ Verify</button>
+                  <button class="btn-reject" onclick="rejectIncident('${inc.incident_id}')">✕ Reject</button>
+                </div>
+              </div>
+            `;
+          }).join("");
+        }
+      } catch (e) { console.error(e); }
+    }
+
+    async function verifyIncident(id) {
+      if (!confirm(`Verify incident ${id} and alert emergency responders?`)) return;
+      const res = await authFetch(`/api/incidents/${id}/verify`, { method: "POST" });
+      if (res.ok) {
+        alert("Incident verified and emergency dispatch initiated.");
+        loadPendingQueue();
+      } else {
+        const err = await res.json();
+        alert(err.detail || "Verification failed.");
+      }
+    }
+
+    async function rejectIncident(id) {
+      const reason = prompt("Enter rejection reason (e.g. false alarm):", "False alarm - normal traffic");
+      if (reason === null) return;
+      const res = await authFetch(`/api/incidents/${id}/reject`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rejection_reason: reason })
+      });
+      if (res.ok) {
+        loadPendingQueue();
+      } else {
+        const err = await res.json();
+        alert(err.detail || "Rejection failed.");
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Citizen Safety &amp; Incident Reporting Portal - Dispatch Sentinel</title>
+  <style>
+    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; }
+    body { background-color: #0f172a; color: #f8fafc; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 1.5rem 1rem; }
+    
+    .nav-bar { width: 100%; max-width: 800px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+    .brand { font-size: 1.2rem; font-weight: bold; color: #38bdf8; text-decoration: none; display: flex; align-items: center; gap: 0.5rem; }
+    .nav-link { color: #94a3b8; text-decoration: none; font-size: 0.85rem; padding: 0.4rem 0.8rem; border: 1px solid #334155; border-radius: 6px; transition: all 0.2s; }
+    .nav-link:hover { color: #38bdf8; border-color: #38bdf8; background: #1e293b; }
+
+    .card { background: #1e293b; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); width: 100%; max-width: 800px; margin-bottom: 1.5rem; }
+    h1 { font-size: 1.6rem; color: #38bdf8; margin-bottom: 0.5rem; text-align: center; }
+    p.subtitle { text-align: center; color: #94a3b8; font-size: 0.95rem; margin-bottom: 1.5rem; }
+
+    .action-banner {
+      background: #0284c722; border: 1px solid #0284c7; border-radius: 8px; padding: 1.5rem; text-align: center; margin-bottom: 1.5rem;
+    }
+    .action-btn {
+      display: inline-block; background: #0284c7; color: white; padding: 0.85rem 2rem; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 1.05rem; margin-top: 1rem; transition: background 0.2s;
+    }
+    .action-btn:hover { background: #0369a1; }
+
+    .grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+    .info-card { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 1rem; text-align: center; }
+    .info-icon { font-size: 2rem; margin-bottom: 0.3rem; }
+    .info-card strong { color: #38bdf8; display: block; margin-bottom: 0.25rem; font-size: 0.95rem; }
+    .info-card p { font-size: 0.82rem; color: #94a3b8; }
+
+    .emergency-contacts {
+      background: #dc262611; border: 1px solid #dc262644; border-radius: 8px; padding: 1rem; margin-top: 1rem; display: flex; justify-content: space-around; flex-wrap: wrap; gap: 1rem;
+    }
+    .contact-item { text-align: center; }
+    .contact-number { font-size: 1.3rem; font-weight: bold; color: #f87171; font-family: monospace; }
+    .contact-label { font-size: 0.78rem; color: #94a3b8; text-transform: uppercase; }
+  </style>
+</head>
+<body>
+
+  <div class="nav-bar">
+    <a href="/citizen" class="brand">
+      <span>🛡️</span> Dispatch Sentinel
+    </a>
+    <div style="display:flex; gap:0.5rem;">
+      <a href="/map" class="nav-link" target="_blank">Live Incident Map &nearr;</a>
+      <a href="/login" class="nav-link">Staff Login &rarr;</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <h1>Citizen Road Safety &amp; Emergency Hub</h1>
+    <p class="subtitle">Real-time reporting portal connecting citizens directly with city traffic emergency response</p>
+
+    <div class="action-banner">
+      <div style="font-size:2rem; margin-bottom:0.5rem;">📷 🚨</div>
+      <h2 style="font-size:1.3rem; color:#f8fafc;">Witnessed or Involved in a Traffic Accident?</h2>
+      <p style="color:#cbd5e1; font-size:0.9rem; margin-top:0.4rem;">
+        Submit photo evidence and GPS coordinates directly to on-duty traffic operators for rapid verification and hospital triage.
+      </p>
+      <a href="/report" class="action-btn">Submit Accident Report Now &rarr;</a>
+    </div>
+
+    <div class="grid-cards">
+      <div class="info-card">
+        <div class="info-icon">📍</div>
+        <strong>One-Click GPS Capture</strong>
+        <p>Captures precise geolocation tags to help first responders reach the scene within minutes.</p>
+      </div>
+      <div class="info-card">
+        <div class="info-icon">🔒</div>
+        <strong>Secure &amp; Private</strong>
+        <p>All citizen submissions are encrypted and reviewed strictly by verified public safety personnel.</p>
+      </div>
+      <div class="info-card">
+        <div class="info-icon">🚑</div>
+        <strong>Automated SOS Dispatch</strong>
+        <p>Verified accidents trigger immediate alert payloads to the nearest trauma hospital.</p>
+      </div>
+    </div>
+
+    <div class="emergency-contacts">
+      <div class="contact-item">
+        <div class="contact-number">108</div>
+        <div class="contact-label">Emergency Ambulance</div>
+      </div>
+      <div class="contact-item">
+        <div class="contact-number">100</div>
+        <div class="contact-label">Police Control Room</div>
+      </div>
+      <div class="contact-item">
+        <div class="contact-number">103</div>
+        <div class="contact-label">Traffic Police Helpline</div>
+      </div>
+      <div class="contact-item">
+        <div class="contact-number">101</div>
+        <div class="contact-label">Fire &amp; Rescue</div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

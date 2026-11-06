@@ -8,19 +8,28 @@
     * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
     body { background-color: #0f172a; color: #f8fafc; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 1rem; }
     .nav-bar { width: 100%; max-width: 900px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-    .brand { font-size: 1.1rem; font-weight: bold; color: #38bdf8; text-decoration: none; }
+    .brand { font-size: 1.15rem; font-weight: bold; color: #38bdf8; text-decoration: none; display: flex; align-items: center; gap: 0.5rem; }
     .nav-link { color: #94a3b8; text-decoration: none; font-size: 0.85rem; padding: 0.4rem 0.8rem; border: 1px solid #334155; border-radius: 6px; transition: all 0.2s; }
     .nav-link:hover { color: #38bdf8; border-color: #38bdf8; background: #1e293b; }
     .card { background: #1e293b; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); width: 100%; max-width: 440px; transition: max-width 0.3s; }
     .card-wide { max-width: 960px; }
-    h2 { margin-top: 0; text-align: center; color: #38bdf8; }
+    h2 { margin-top: 0; text-align: center; color: #38bdf8; display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
     p.subtitle { text-align: center; color: #94a3b8; font-size: 0.9rem; margin-bottom: 1.5rem; }
     .field { margin-bottom: 1rem; }
-    label { display: block; font-size: 0.85rem; margin-bottom: 0.4rem; color: #cbd5e1; }
-    input { width: 100%; padding: 0.75rem; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; outline: none; }
+    label { display: block; font-size: 0.85rem; margin-bottom: 0.4rem; color: #cbd5e1; font-weight: 600; }
+    .input-wrapper { position: relative; display: flex; align-items: center; }
+    input { width: 100%; padding: 0.75rem; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; outline: none; font-size: 0.9rem; }
     input:focus { border-color: #38bdf8; }
-    button { width: 100%; padding: 0.75rem; border: none; background: #0284c7; color: white; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s; margin-top: 0.5rem; }
-    button:hover { background: #0369a1; }
+    .toggle-pwd {
+      position: absolute; right: 10px; background: none; border: none; color: #94a3b8; cursor: pointer; padding: 0.25rem 0.5rem; font-size: 0.82rem; margin: 0; width: auto; font-weight: normal;
+    }
+    .toggle-pwd:hover { color: #38bdf8; background: none; }
+    button.btn-primary {
+      width: 100%; padding: 0.75rem; border: none; background: #0284c7; color: white; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s; margin-top: 0.5rem; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+    }
+    button.btn-primary:hover:not(:disabled) { background: #0369a1; }
+    button.btn-primary:disabled { background: #475569; cursor: not-allowed; }
+    
     #message { margin-top: 1rem; padding: 0.75rem; border-radius: 6px; display: none; font-size: 0.85rem; }
     .error { background: #ef444422; border: 1px solid #ef4444; color: #fca5a5; }
     .success { background: #22c55e22; border: 1px solid #22c55e; color: #86efac; }
@@ -51,45 +60,78 @@
     .inc-photo-box { margin-bottom: 0.75rem; text-align: center; }
     .inc-thumb { max-height: 180px; width: 100%; object-fit: cover; border-radius: 6px; border: 1px solid #334155; cursor: pointer; }
     .inc-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.5rem; }
-    .btn-verify { background: #16a34a; padding: 0.6rem; font-size: 0.85rem; }
+    .btn-verify { background: #16a34a; padding: 0.6rem; font-size: 0.85rem; color:white; border:none; border-radius:6px; cursor:pointer; }
     .btn-verify:hover { background: #15803d; }
-    .btn-reject { background: #dc2626; padding: 0.6rem; font-size: 0.85rem; }
+    .btn-reject { background: #dc2626; padding: 0.6rem; font-size: 0.85rem; color:white; border:none; border-radius:6px; cursor:pointer; }
     .btn-reject:hover { background: #b91c1c; }
     .empty-state { text-align: center; padding: 2.5rem 1rem; color: #94a3b8; font-size: 0.95rem; background: #0f172a; border-radius: 8px; border: 1px dashed #334155; margin-top: 1rem; }
     .map-link { color: #38bdf8; text-decoration: none; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 0.25rem; }
     .map-link:hover { text-decoration: underline; }
+
+    /* Role selection helper buttons */
+    .role-presets { display: flex; gap: 0.4rem; margin-top: 1rem; flex-wrap: wrap; justify-content: center; }
+    .preset-chip {
+      background: #0f172a; border: 1px solid #334155; color: #94a3b8; border-radius: 4px; padding: 0.25rem 0.5rem; font-size: 0.75rem; cursor: pointer;
+    }
+    .preset-chip:hover { color: #38bdf8; border-color: #38bdf8; }
   </style>
 </head>
 <body>
 
   <div class="nav-bar">
-    <a href="/login" class="brand">Dispatch Sentinel</a>
-    <a href="/report" class="nav-link">Citizen Incident Reporting &rarr;</a>
+    <a href="/login" class="brand">
+      <span>🛡️</span> Dispatch Sentinel
+    </a>
+    <div style="display:flex; gap:0.5rem;">
+      <a href="/report" class="nav-link">Citizen Incident Reporting &rarr;</a>
+      <a href="/map" class="nav-link" target="_blank">Incident Map &nearr;</a>
+    </div>
   </div>
 
   <!-- Login View -->
   <div class="card" id="login-view">
-    <h2>Dispatch Sentinel</h2>
-    <p class="subtitle">Real-Time Traffic &amp; Emergency Reporting</p>
+    <h2><span>🚨</span> Dispatch Sentinel</h2>
+    <p class="subtitle">Real-Time Traffic Accident &amp; Emergency Command</p>
     
     <div class="field">
-      <label>Operator / Responder Email</label>
+      <label>Email Address</label>
       <input type="email" id="email" placeholder="officer@traffic.org" value="officer@traffic.org">
     </div>
+
     <div class="field">
       <label>Password</label>
-      <input type="password" id="password" placeholder="••••••••" value="SecurePass123!">
+      <div class="input-wrapper">
+        <input type="password" id="password" placeholder="••••••••" value="SecurePass123!">
+        <button type="button" class="toggle-pwd" id="toggle-pwd-btn" onclick="togglePasswordVisibility()">👁️ Show</button>
+      </div>
     </div>
     
-    <button onclick="handleLogin()">Sign In</button>
+    <button class="btn-primary" id="btn-login" onclick="handleLogin()">
+      <span id="login-text">Sign In to Command Portal</span>
+      <span id="login-spinner" style="display:none;">⏳ Authenticating...</span>
+    </button>
+
     <div id="message"></div>
+
+    <div style="margin-top:1.5rem; border-top:1px solid #334155; padding-top:1rem; text-align:center;">
+      <div style="font-size:0.75rem; color:#64748b; margin-bottom:0.4rem;">QUICK ROLE DEMO ACCOUNTS:</div>
+      <div class="role-presets">
+        <span class="preset-chip" onclick="fillCredentials('admin@traffic.org', 'AdminPass123!')">Admin</span>
+        <span class="preset-chip" onclick="fillCredentials('officer@traffic.org', 'SecurePass123!')">Traffic Operator</span>
+        <span class="preset-chip" onclick="fillCredentials('ems@citygov.org', 'ResponderPass123!')">EMS Responder</span>
+        <span class="preset-chip" onclick="fillCredentials('citizen@public.org', 'CitizenPass123!')">Citizen</span>
+      </div>
+    </div>
   </div>
 
-  <!-- Dashboard / Command Center View -->
+  <!-- Dashboard / Command Center View (Fallback & Embedded Operator Queue) -->
   <div class="card" id="dashboard-view">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.5rem;">
       <h2 id="dash-title" style="margin:0;">Command Center</h2>
-      <button style="width:auto; padding:0.4rem 0.9rem; background:#475569; margin:0;" onclick="handleLogout()">Log Out</button>
+      <div style="display:flex; gap:0.5rem;">
+        <button id="dedicated-dash-btn" style="width:auto; padding:0.4rem 0.9rem; background:#0284c7; color:white; border:none; border-radius:6px; cursor:pointer;" onclick="goToDedicatedDashboard()">Open Full Dashboard &rarr;</button>
+        <button style="width:auto; padding:0.4rem 0.9rem; background:#475569; color:white; border:none; border-radius:6px; cursor:pointer;" onclick="handleLogout()">Log Out</button>
+      </div>
     </div>
     <p style="text-align:center; margin: 0.25rem 0 1rem 0;"><span id="role-badge" class="badge"></span></p>
     
@@ -99,7 +141,7 @@
       <div><strong>Permissions:</strong> <span id="dash-perms"></span></div>
     </div>
 
-    <div id="operator-alert" class="alert" style="display:none; margin-bottom: 1rem;"></div>
+    <div id="operator-alert" class="alert" style="display:none; margin-bottom: 1rem; padding:0.75rem; border-radius:6px;"></div>
 
     <!-- SCRUM-35: Pending Verification Queue -->
     <div class="section-title">
@@ -122,6 +164,23 @@
     let authToken = null;
     let currentUserRole = null;
 
+    function togglePasswordVisibility() {
+      const pwdInput = document.getElementById("password");
+      const toggleBtn = document.getElementById("toggle-pwd-btn");
+      if (pwdInput.type === "password") {
+        pwdInput.type = "text";
+        toggleBtn.textContent = "🙈 Hide";
+      } else {
+        pwdInput.type = "password";
+        toggleBtn.textContent = "👁️ Show";
+      }
+    }
+
+    function fillCredentials(email, pwd) {
+      document.getElementById("email").value = email;
+      document.getElementById("password").value = pwd;
+    }
+
     function escapeHtml(text) {
       if (!text) return "";
       return text
@@ -141,11 +200,17 @@
     }
 
     async function handleLogin() {
-      const email = document.getElementById("email").value;
+      const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value;
       const msgBox = document.getElementById("message");
+      const btn = document.getElementById("btn-login");
+      const loginText = document.getElementById("login-text");
+      const loginSpinner = document.getElementById("login-spinner");
 
       msgBox.style.display = "none";
+      btn.disabled = true;
+      loginText.style.display = "none";
+      loginSpinner.style.display = "inline";
 
       try {
         const res = await fetch("/api/auth/login", {
@@ -155,6 +220,9 @@
         });
 
         const data = await res.json();
+        btn.disabled = false;
+        loginText.style.display = "inline";
+        loginSpinner.style.display = "none";
 
         if (!res.ok) {
           msgBox.className = "error";
@@ -169,12 +237,36 @@
         sessionStorage.setItem("user_email", email);
         sessionStorage.setItem("user_role", data.role);
 
-        displayDashboard(email, data.role);
+        // Role-based routing according to SCRUM-39 specification
+        if (data.role === "Administrator" || data.role === "Admin") {
+          window.location.href = "/admin";
+        } else if (data.role === "Traffic Operator") {
+          window.location.href = "/traffic";
+        } else if (data.role === "EMS Responder") {
+          window.location.href = "/ems";
+        } else if (data.role === "Citizen") {
+          window.location.href = "/report";
+        } else {
+          displayDashboard(email, data.role);
+        }
 
       } catch (err) {
+        btn.disabled = false;
+        loginText.style.display = "inline";
+        loginSpinner.style.display = "none";
         msgBox.className = "error";
-        msgBox.textContent = "Unable to connect to auth server.";
+        msgBox.textContent = "Unable to connect to authentication service.";
         msgBox.style.display = "block";
+      }
+    }
+
+    function goToDedicatedDashboard() {
+      if (currentUserRole === "Administrator" || currentUserRole === "Admin") {
+        window.location.href = "/admin";
+      } else if (currentUserRole === "EMS Responder") {
+        window.location.href = "/ems";
+      } else {
+        window.location.href = "/traffic";
       }
     }
 
@@ -188,7 +280,7 @@
       const badge = document.getElementById("role-badge");
       const perms = document.getElementById("dash-perms");
 
-      if (role === "Admin") {
+      if (role === "Admin" || role === "Administrator") {
         badge.textContent = "ADMINISTRATOR";
         badge.className = "badge badge-admin";
         perms.textContent = "Full System Access, Verification & Diagnostics";
@@ -342,8 +434,6 @@
 
         const dispatchInfo = data.dispatch ? ` Dispatch Status: ${data.dispatch.dispatch_status}` : "";
         showOperatorAlert(`Incident ${incidentId} verified successfully.${dispatchInfo}`, true);
-        
-        // Remove card from UI dynamically
         removeCardFromQueue(incidentId);
 
       } catch (err) {
@@ -353,7 +443,7 @@
 
     async function rejectIncident(incidentId) {
       const reason = prompt(`Enter rejection reason for incident ${incidentId}:`, "False alarm / no collision detected");
-      if (reason === null) return; // Cancelled
+      if (reason === null) return;
 
       try {
         const res = await fetch(`/api/incidents/${incidentId}/reject`, {
@@ -395,7 +485,6 @@
       }
     }
 
-    // Check existing session
     window.addEventListener("DOMContentLoaded", () => {
       const savedToken = sessionStorage.getItem("access_token");
       const savedEmail = sessionStorage.getItem("user_email");
@@ -403,6 +492,20 @@
       if (savedToken && savedEmail) {
         authToken = savedToken;
         currentUserRole = savedRole;
+        // If query param ?noredirect is not present and they have dedicated dashboard, redirect
+        const urlParams = new URLSearchParams(window.location.search);
+        if (!urlParams.has("stay")) {
+          if (savedRole === "Administrator" || savedRole === "Admin") {
+            window.location.href = "/admin";
+            return;
+          } else if (savedRole === "Traffic Operator") {
+            window.location.href = "/traffic";
+            return;
+          } else if (savedRole === "EMS Responder") {
+            window.location.href = "/ems";
+            return;
+          }
+        }
         displayDashboard(savedEmail, savedRole);
       }
     });
